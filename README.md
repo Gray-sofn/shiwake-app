@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 商業簿記3級 仕訳練習Webアプリ
 
-## Getting Started
+商業簿記3級の学習者を対象とした、仕訳問題に特化した反復練習Webアプリケーションです。
+Next.js (App Router) と TypeScript を使用し、Vercel 上にデプロイして動作するフルスタック構成で開発されています。
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 📌 プロジェクト概要
+* **開発目的**: 商業簿記3級で最も重要な「仕訳」の反復演習を効率化し、定着率を向上させる。
+* **ターゲット**: 簿記3級の受験生・初学者
+* **主な特徴**:
+  * 複合仕訳（借方・貸方が複数行になる取引）に対応した5行固定入力インターフェース
+  * 問題ごとの動的選択肢表示（ひっかけ問題・類似勘定科目の出題）
+  * 順序不問の自動正否判定とわかりやすい解説
+  * 認証なしですぐ試せる「ゲストモード」と学習履歴を保存できる「ユーザーモード（予定）」の2段階設計
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠 使用技術（技術スタック）
+* **フレームワーク**: Next.js (App Router)
+* **言語**: TypeScript
+* **スタイリング**: Tailwind CSS
+* **データ取得**: 内部API（Route Handler） ＋ JSONファイル (`src/data/questions.json`)
+* **ソースコード管理 / デプロイ**: GitHub / Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🚀 主な機能仕様
 
-To learn more about Next.js, take a look at the following resources:
+### 1. 問題表示・解答機能
+* **進捗表示**: 第何問かのインジケーターおよび単元名（カテゴリ）の明示
+* **動的セレクトボックス**: 問題データの `options` から適切な勘定科目選択肢を動的読み込み
+* **5行固定入力レイアウト**: 借方・貸方それぞれ5行の「科目（選択）＋ 金額（入力）」を横並び配置
+* **入力検証**: 借方・貸方それぞれに1行以上の入力がある場合のみ解答を許可
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2. 正否判定・解説機能
+* **自動判定**: 入力された行の内容（科目と金額のセット）を抽出し、模範解答と照合（入力行の順序に依存しない柔軟な判定）
+* **模範解答と解説の表示**: 正解（🎉）/ 不正解（❌）の判定後、模範解答と詳細な解説を表示
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 👤 アクセスモード仕様
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| モード名 | ログイン | 機能範囲 | データ保存先 |
+| :--- | :--- | :--- | :--- |
+| **ゲストモード** | 不要 | ・基本出題・自動判定・解説表示<br>・単元別絞り込み・自動復習（予定） | ローカルストレージ（`localStorage`） / メモリ |
+| **ユーザーモード** | **要**（予定） | ・クラウド上への学習履歴・正答率の長期保存<br>・複数端末間の進捗同期<br>・弱点分析ダッシュボード | 外部データベース（Supabase / PostgreSQL等） |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📁 ディレクトリ構造
+
+```text
+shiwake-app/
+│
+├── app/
+│   ├── api/
+│   │   └── questions/
+│   │       └── route.ts      # 内部API（データ配信）
+│   ├── page.tsx              # メイン画面（問題演習UI）
+│   └── globals.css
+├── data/
+│   └── questions.json        # 仕訳問題データ
+├── types/
+│   └── question.ts           # TypeScript型定義
+└── README.md
