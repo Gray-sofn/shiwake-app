@@ -43,3 +43,9 @@ next-env.d.ts
 node_modules
 .next
 .env*.local
+/app/generated/prisma
+
+# AI tools & agents
+.agents
+.claude
+.windsurf

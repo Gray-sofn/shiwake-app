@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 1. ユーザーテーブル (ClerkのユーザーIDと紐付け)
+model User {
+  id        String      @id // Clerkの userId (例: "user_2xxxx...")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // リレーション（1人のユーザーが複数の回答履歴を持つ）
+  answerLogs AnswerLog[]
+}
+
+// 2. 回答履歴・AIアドバイス保存テーブル
+model AnswerLog {
+  id          String   @id @default(uuid())
+  userId      String   // Clerkの userId
+  questionId  String   // 問題ID ("q001" など)
+  
+  isCorrect   Boolean  // 正否 (true: 正解, false: 不正解)
+
+  // 不正解時のみ保存（正解時は null にできるオプショナル設定）
+  userAnswer  Json?    
+  aiAdvice    String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+
+  // リレーション（ユーザー削除時に履歴も一括削除）
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // ユーザーIDと問題IDでの検索・集計を高速化
+  @@index([userId, questionId])
+}
