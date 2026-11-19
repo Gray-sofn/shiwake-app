@@ -1,4 +1,6 @@
 // app/sign-up/[[...sign-up]]/page.tsx
+export const instant = false
+
 import { SignUp } from '@clerk/nextjs';
 
 export default function SignUpPage() {
