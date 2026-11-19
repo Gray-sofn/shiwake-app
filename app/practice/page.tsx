@@ -7,6 +7,10 @@ import { JournalForm } from '@/components/practice/JournalForm';
 import { ExplanationCard } from '@/components/practice/ExplanationCard';
 import { ResultView } from '@/components/practice/ResultView';
 import { getWrongQuestionIds, addWrongQuestionId, removeWrongQuestionId } from '@/utils/storage';
+import { useUser } from '@clerk/nextjs';
+import { saveAnswerLog } from '@/actions/saveAnswerLog';
+import { generateAdvice } from '@/actions/generateAdvice';
+import { getWrongQuestionIdsFromDB } from '@/actions/getWrongQuestionIds';
 
 // 1行分の入力状態の型定義
 interface RowInput {
@@ -44,6 +48,9 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 function PracticeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useUser();
+  const [aiAdvice, setAiAdvice] = useState<string | null>(null);
+  const [isLoadingAdvice, setIsLoadingAdvice] = useState(false);
 
   // ① URLのクエリパラメータを取得
   const selectedCategory = searchParams.get('category');
@@ -70,6 +77,9 @@ function PracticeContent() {
 
   // データ初期化
   useEffect(() => {
+    // Clerkの認証情報の読み込みが終わっていない場合は処理をスキップ
+    if (!isLoaded) return;
+
     async function fetchQuestions() {
       try {
         setLoading(true);
@@ -79,7 +89,16 @@ function PracticeContent() {
         // 1. 単元（カテゴリ）による絞り込み
         // ★ 「要復習」モードの場合、localStorageに保存されたIDの問題だけを抽出
         if (selectedCategory === 'review') {
-          const wrongIds = getWrongQuestionIds();
+          // ★ ログイン状態に応じて誤答IDの取得先を分岐
+          let wrongIds: string[] = [];
+
+          if (isSignedIn) {
+            // ログイン時：DB（Prisma）から最新の誤答IDを取得
+            wrongIds = await getWrongQuestionIdsFromDB();
+          } else {
+            // ゲスト時：ブラウザの localStorage から誤答IDを取得
+            wrongIds = getWrongQuestionIds();
+          }
           data = data.filter((q) => wrongIds.includes(q.id));
         } else if (selectedCategory && selectedCategory !== 'すべて') {
           data = data.filter((q) => q.category === selectedCategory);
@@ -102,7 +121,7 @@ function PracticeContent() {
       }
     }
     fetchQuestions();
-  }, [selectedCategory, isRandom, limitCount]);
+  }, [selectedCategory, isRandom, limitCount, isSignedIn, isLoaded]);
 
   // 全状態をリセットするヘルパー関数
   const resetState = () => {
@@ -218,7 +237,7 @@ function PracticeContent() {
   };
 
   // 回答チェック処理
-  const handleCheckAnswer = () => {
+  const handleCheckAnswer = async () => {
     const solution = currentQuestion.solution;
     const targetDebits: JournalEntryLine[] = Array.isArray(solution.debit) ? solution.debit : [solution.debit];
     const targetCredits: JournalEntryLine[] = Array.isArray(solution.credit) ? solution.credit : [solution.credit];
@@ -256,7 +275,57 @@ function PracticeContent() {
       // ★ 間違えた問題は localStorage の誤答リストに追加
       addWrongQuestionId(currentQuestion.id);
     }
+
+    // ★【重要】答え合わせと固定解説を「即座に」画面表示！
     setIsAnswered(true);
+    // -------------------------------------------------------------
+    // ★ DBへの回答ログ保存処理を追加
+    // -------------------------------------------------------------
+    if (isSignedIn) {
+
+      // DBに保存用として整形（文字列の金額を数値に変換）
+      const userAnswerData = {
+        debits: activeDebits.map((r) => ({
+          account: r.account,
+          amount: Number(r.amount.replace(/,/g, '')),
+        })),
+        credits: activeCredits.map((r) => ({
+          account: r.account,
+          amount: Number(r.amount.replace(/,/g, '')),
+        })),
+      };
+      // 【1】不正解の場合のみ Gemini API でアドバイスを生成（ゲスト時はスキップ
+      if (!correct) {
+        setIsLoadingAdvice(true);
+        setAiAdvice(null);
+
+        generateAdvice({
+          questionText: currentQuestion.question,
+          correctAnswer: currentQuestion.solution,
+          userAnswer: userAnswerData,
+        }).then((adviceResult) => {
+          const generatedAdviceText = adviceResult.success ? adviceResult.advice : undefined;
+
+          // 生成完了後にAIアドバイス部分のみ更新
+          setAiAdvice(generatedAdviceText ?? null);
+          setIsLoadingAdvice(false);
+
+          // Server Action を実行して保存
+          saveAnswerLog({
+            questionId: currentQuestion.id,
+            isCorrect: correct,
+            userAnswer: userAnswerData, // 正解時は saveAnswerLog 内で自動的に Prisma.JsonNull になります
+            aiAdvice: generatedAdviceText,
+          });
+        });
+      } else {
+        // 正解時は非同期でそのまま DB 保存
+        saveAnswerLog({
+          questionId: currentQuestion.id,
+          isCorrect: true,
+        });
+      }
+    }
   };
 
   // 次の問題へ進む処理
@@ -340,6 +409,8 @@ function PracticeContent() {
           targetCredits={targetCredits}
           explanation={currentQuestion.explanation}
           isLastQuestion={currentIndex === questions.length - 1}
+          aiAdvice={aiAdvice}               // ★追加
+          isLoadingAdvice={isLoadingAdvice} // ★追加
           onNextQuestion={handleNextQuestion}
         />
       )}

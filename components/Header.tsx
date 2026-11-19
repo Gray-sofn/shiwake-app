@@ -28,6 +28,13 @@ export default function Header() {
 
           {/* ログイン済み：ユーザーアイコンを表示 */}
           <Show when="signed-in">
+            {/* ★ マイページへのリンクを追加 */}
+            <Link
+              href="/mypage"
+              className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              マイページ
+            </Link>
             <UserButton />
           </Show>
         </Suspense>

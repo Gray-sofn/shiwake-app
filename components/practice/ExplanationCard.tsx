@@ -8,6 +8,8 @@ interface ExplanationCardProps {
   targetCredits: JournalEntryLine[];
   explanation: string;
   isLastQuestion: boolean;
+  aiAdvice: string | null;           // ★追加
+  isLoadingAdvice: boolean;          // ★追加
   onNextQuestion: () => void;
 }
 
@@ -17,6 +19,8 @@ export function ExplanationCard({
   targetCredits,
   explanation,
   isLastQuestion,
+  aiAdvice,
+  isLoadingAdvice,
   onNextQuestion,
 }: ExplanationCardProps) {
   return (
@@ -53,6 +57,26 @@ export function ExplanationCard({
         <h3 className="font-bold mb-1 text-blue-900">【解説】</h3>
         <p className="whitespace-pre-wrap">{explanation}</p>
       </div>
+
+      {/* --------------------------------------------------------- */}
+      {/* ★ AI アドバイス表示エリア（不正解時・ログイン時） */}
+      {/* --------------------------------------------------------- */}
+      {isLoadingAdvice && (
+        <div className="p-4 bg-blue-50 text-blue-800 rounded-lg animate-pulse flex items-center gap-2">
+          <span>🤖 AIがアドバイスを生成中...</span>
+        </div>
+      )}
+
+      {!isLoadingAdvice && aiAdvice && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+          <div className="flex items-center gap-2 font-bold text-blue-900">
+            <span>🤖 AI講師からのアドバイス</span>
+          </div>
+          <p className="text-sm text-blue-950 whitespace-pre-wrap leading-relaxed">
+            {aiAdvice}
+          </p>
+        </div>
+      )}
 
       {/* 次へ進む / 結果を見るボタン */}
       <button

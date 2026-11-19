@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Question } from '@/types/question';
 import { getWrongQuestionIds, clearWrongQuestionIds } from '@/utils/storage';
+import { getWrongQuestionIdsFromDB } from '@/actions/getWrongQuestionIds'; // DB用
+import { useUser } from '@clerk/nextjs';
 
 export default function TopPage() {
   const router = useRouter();
@@ -23,6 +25,30 @@ export default function TopPage() {
   // 出題数と選択単元内の最大問題数
   const [maxCount, setMaxCount] = useState(10);
   const [questionCount, setQuestionCount] = useState(10);
+
+  const { isSignedIn, isLoaded } = useUser();
+  const [wrongCount, setWrongCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!isLoaded) return; // Clerkの読み込み完了を待つ
+
+    const fetchWrongCount = async () => {
+      setIsLoading(true);
+      if (isSignedIn) {
+        // ログイン中：DB から最新の誤答リストを取得
+        const dbWrongIds = await getWrongQuestionIdsFromDB();
+        setWrongCount(dbWrongIds.length);
+      } else {
+        // ゲスト時：localStorage から取得
+        const localWrongIds = getWrongQuestionIds();
+        setWrongCount(localWrongIds.length);
+      }
+      setIsLoading(false);
+    };
+
+    fetchWrongCount();
+  }, [isSignedIn, isLoaded]);
 
   // 初回レンダリング時にカテゴリ一覧と問題データを取得
   useEffect(() => {
