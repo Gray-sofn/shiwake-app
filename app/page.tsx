@@ -6,6 +6,8 @@ import { Question } from '@/types/question';
 import { getWrongQuestionIds, clearWrongQuestionIds } from '@/utils/storage';
 import { getWrongQuestionIdsFromDB } from '@/actions/getWrongQuestionIds'; // DB用
 import { useUser } from '@clerk/nextjs';
+import { Show, SignInButton, SignUpButton } from '@clerk/nextjs';
+import Link from 'next/link';
 
 export default function TopPage() {
   const router = useRouter();
@@ -158,33 +160,85 @@ export default function TopPage() {
         <p className="text-gray-600">サクサク解いて仕訳をマスターしよう！</p>
       </div>
 
-      {/* モード選択エリア */}
+      {/* モード選択 / ログインステータス表示エリア */}
       <div className="mb-8">
-        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">利用モードの選択</h2>
-        <div className="grid grid-cols-2 gap-4">
-          {/* ゲストモード */}
-          <button
-            type="button"
-            onClick={() => setMode('guest')}
-            className={`p-4 border-2 rounded-xl text-left transition ${mode === 'guest'
-              ? 'border-blue-600 bg-blue-50/50 text-blue-950'
-              : 'border-gray-200 bg-white hover:border-gray-300'
-              }`}
-          >
-            <div className="font-bold mb-1">🚀 ゲストモード</div>
-            <div className="text-xs text-gray-500">ログイン不要ですぐに解き始められます</div>
-          </button>
+        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
+          利用モード
+        </h2>
 
-          {/* ユーザーモード（開発予定） */}
-          <button
-            type="button"
-            disabled
-            className="p-4 border-2 border-gray-200 rounded-xl text-left bg-gray-50 opacity-60 cursor-not-allowed"
-          >
-            <div className="font-bold mb-1 text-gray-500">🔒 ユーザーモード</div>
-            <div className="text-xs text-gray-400">フェーズ3で実装予定（履歴をクラウド保存）</div>
-          </button>
-        </div>
+        {/* ------------------------------------------------------------- */}
+        {/* ① 未ログイン時（サインイン・サインアップへの誘導カード） */}
+        {/* ------------------------------------------------------------- */}
+        <Show when="signed-out">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* ゲストモード */}
+            <div className="p-5 border-2 border-gray-200 bg-white rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-gray-800">🚀 ゲストモード</span>
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">登録不要</span>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                ログインせずに今すぐ演習を開始できます。（※履歴はブラウザのみ保存、AI解説なし）
+              </p>
+            </div>
+
+            {/* ユーザーモード（サインイン・サインアップ誘導） */}
+            <div className="p-5 border-2 border-blue-500 bg-blue-50/50 rounded-xl space-y-3 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-blue-950 flex items-center gap-1">
+                  ✨ ユーザーモード
+                </span>
+                <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded font-bold">おすすめ</span>
+              </div>
+              <p className="text-xs text-blue-900 leading-relaxed">
+                ログインすると **AIアドバイス機能** や **履歴のクラウド保存・復習ノート** が利用できます。
+              </p>
+
+              {/* サインイン・サインアップ ボタン群 */}
+              <div className="flex gap-2 pt-1">
+                <SignInButton mode="modal">
+                  <button
+                    type="button"
+                    className="flex-1 py-2 px-3 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm"
+                  >
+                    ログイン
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button
+                    type="button"
+                    className="flex-1 py-2 px-3 text-xs font-bold text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition"
+                  >
+                    新規登録
+                  </button>
+                </SignUpButton>
+              </div>
+            </div>
+          </div>
+        </Show>
+
+        {/* ------------------------------------------------------------- */}
+        {/* ② ログイン済み時（ユーザーモード有効化ステータス表示） */}
+        {/* ------------------------------------------------------------- */}
+        <Show when="signed-in">
+          <div className="p-5 border-2 border-green-500 bg-green-50/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-green-950">✅ ユーザーモード適用中</span>
+                <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-medium">ログイン済み</span>
+              </div>
+              <p className="text-xs text-green-800">
+                AIアドバイスおよび学習データのクラウド保存が有効になっています。
+              </p>
+            </div>
+            <Link
+              href="/mypage"
+              className="inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-green-800 bg-white border border-green-300 rounded-lg hover:bg-green-100 transition whitespace-nowrap shadow-sm"
+            >
+              📊 マイページを見る
+            </Link>
+          </div>
+        </Show>
       </div>
 
       {/* 出題設定カード */}
