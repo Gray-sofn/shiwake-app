@@ -11,6 +11,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)', // ← ここを追加（Webhook用APIを保護対象から除外）
   '/api/questions(.*)',   // ← ★追加（問題データ取得APIを許可）
   '/api/categories(.*)',  // ← ★追加（カテゴリデータ取得APIを許可）
+  '/api/health-check(.*)',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
