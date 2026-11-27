@@ -1,7 +1,8 @@
-export const dynamic = 'force-dynamic';
 // app/api/health-check/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+
+// export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   // CRONリクエストのセキュリティチェック（任意・推奨）
